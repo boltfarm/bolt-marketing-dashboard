@@ -13,7 +13,7 @@ import type { ChannelRow, DailyPoint, TrafficData } from "./types";
  */
 const BASE = "https://connectors.windsor.ai";
 
-const GA4 = process.env.WINDSOR_GA4_CONNECTOR || "ga4";
+const GA4 = process.env.WINDSOR_GA4_CONNECTOR || "googleanalytics4";
 const GOOGLE_ADS = process.env.WINDSOR_GOOGLEADS_CONNECTOR || "google_ads";
 const META = process.env.WINDSOR_META_CONNECTOR || "facebook";
 
