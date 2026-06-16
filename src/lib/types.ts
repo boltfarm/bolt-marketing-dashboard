@@ -11,7 +11,6 @@ export type Metric = {
 
 // The 7 (+ leads) metric keys rendered by the weekly report.
 export type MetricKey =
-  | "qualifiedLeads"
   | "totalVisitors"
   | "conversionRate"
   | "googleAdsSpend"
@@ -32,9 +31,8 @@ export type WeekIndex = { weeks: WeekIndexEntry[]; latest: string };
 // Fields a human enters in /admin that cannot be auto-pulled.
 export type ManualWeekInput = {
   weekOf: string;
-  bookings?: number | null; // # of bookings → drives Cost Per Booking
+  bookings?: number | null; // # of bookings → drives Cost Per Booking + Conversion Rate
   totalBookingValue?: number | null; // $ → drives Total Booking Value + ROAS
-  oliveLeads?: number | null; // qualified leads from Olive
   notes?: string;
   updatedAt?: string;
 };

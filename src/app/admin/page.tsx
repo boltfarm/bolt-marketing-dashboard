@@ -88,8 +88,8 @@ export default async function AdminPage({
       <div className="card">
         <div className="section-label">Manual data · week of {active}</div>
         <p style={{ fontSize: 13, opacity: 0.7, margin: "6px 0 20px" }}>
-          Auto-pulled fields (visitors, conversion rate, ad spend, qualified leads) come from Windsor.ai &amp; HubSpot.
-          Cost&nbsp;Per&nbsp;Booking and ROAS are derived from the values below — you don’t enter them directly.
+          Visitors and ad spend are pulled automatically from Windsor.ai (GA4, Google Ads, Meta Ads).
+          Booking&nbsp;Conversion&nbsp;Rate, Cost&nbsp;Per&nbsp;Booking, and ROAS are derived from the values below — you don’t enter them directly.
         </p>
         <form action={saveManualAction} className="admin-form">
           <input type="hidden" name="weekOf" value={active} />
@@ -104,12 +104,6 @@ export default async function AdminPage({
             <label htmlFor="totalBookingValue">Total Booking Value ($)</label>
             <span className="hint">Total revenue booked this week. Used for Total Booking Value and ROAS.</span>
             <input id="totalBookingValue" name="totalBookingValue" type="number" step="0.01" min="0" className="admin-input" defaultValue={prefill.totalBookingValue ?? ""} />
-          </div>
-
-          <div className="admin-field">
-            <label htmlFor="oliveLeads">Olive Qualified Leads</label>
-            <span className="hint">Qualified leads from Olive (not available via API).</span>
-            <input id="oliveLeads" name="oliveLeads" type="number" step="1" min="0" className="admin-input" defaultValue={prefill.oliveLeads ?? ""} />
           </div>
 
           <div className="admin-field">

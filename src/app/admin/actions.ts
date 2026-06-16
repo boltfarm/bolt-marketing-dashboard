@@ -31,7 +31,6 @@ export async function saveManualAction(formData: FormData) {
     weekOf,
     bookings: optNum(formData.get("bookings")),
     totalBookingValue: optNum(formData.get("totalBookingValue")),
-    oliveLeads: optNum(formData.get("oliveLeads")),
     notes: String(formData.get("notes") ?? "").trim() || undefined,
   });
 

@@ -1,4 +1,3 @@
-import { fetchQualifiedLeads } from "./hubspot";
 import { store } from "./store";
 import type { Metric, MetricKey, MetricPoint, WeekData } from "./types";
 import { fetchAdSpend, fetchVisitors } from "./windsor";
@@ -37,14 +36,11 @@ export async function assembleMarketingWeek(weekStart: string): Promise<WeekData
   const endDate = new Date(start.getTime() + 6 * DAY);
   const end = iso(endDate);
 
-  const [visitors, googleSpend, metaSpend, leads] = await Promise.all([
+  const [visitors, googleSpend, metaSpend] = await Promise.all([
     fetchVisitors(weekStart, end),
     fetchAdSpend("google", weekStart, end),
     fetchAdSpend("meta", weekStart, end),
-    fetchQualifiedLeads(weekStart, end).catch(() => 0),
   ]);
-
-  const conversionRate = visitors.total > 0 ? leads / visitors.total : 0;
 
   // Prior-week and prior-year reference values from storage.
   const priorWeekStart = iso(new Date(start.getTime() - 7 * DAY));
@@ -70,10 +66,10 @@ export async function assembleMarketingWeek(weekStart: string): Promise<WeekData
 
   const metrics: WeekData["metrics"] = {
     totalVisitors: make("totalVisitors", visitors.total, visitors.bySource),
-    conversionRate: make("conversionRate", conversionRate),
+    // Booking conversion rate is derived from manual bookings ÷ visitors in applyManual().
+    conversionRate: make("conversionRate", 0),
     googleAdsSpend: make("googleAdsSpend", googleSpend),
     metaAdsSpend: make("metaAdsSpend", metaSpend),
-    qualifiedLeads: make("qualifiedLeads", leads),
   };
 
   return { generatedAt: new Date().toISOString(), weekOf: { start: weekStart, end }, metrics };

@@ -17,8 +17,7 @@ const METRIC_CONFIG: {
   sources?: boolean;
 }[] = [
   { key: "totalVisitors", label: "Website Visitors", format: "number", dir: "up", sources: true },
-  { key: "qualifiedLeads", label: "Qualified Leads", format: "number", dir: "up" },
-  { key: "conversionRate", label: "Conversion Rate", format: "percent", dir: "up" },
+  { key: "conversionRate", label: "Booking Conversion Rate", format: "percent", dir: "up" },
   { key: "googleAdsSpend", label: "Google Ads Spend", format: "money", dir: "neutral" },
   { key: "metaAdsSpend", label: "Meta Ads Spend", format: "money", dir: "neutral" },
   { key: "costPerBooking", label: "Cost Per Booking", format: "money", dir: "down" },
@@ -143,7 +142,7 @@ export default async function MarketingPage({
               : "—"}
           </span>
           <span className="footer-sep">·</span>
-          <span>Sources: HubSpot, GA4, Google Ads, Meta Ads, Olive</span>
+          <span>Sources: GA4, Google Ads, Meta Ads (via Windsor.ai) · bookings entered manually</span>
         </footer>
       </main>
     </>

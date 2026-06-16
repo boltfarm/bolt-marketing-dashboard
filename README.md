@@ -15,20 +15,18 @@ merged at render time.
 ## How data flows
 
 ```
-Windsor.ai (GA4 + Google Ads + Meta Ads) ─┐
-HubSpot (qualified leads)                  ├─► cron jobs ─► base data ─┐
-                                           │   (weekly/daily)          ├─► merged ─► dashboards
-Admin form (bookings, booking value, Olive)└─────────────────────────►┘
-                                               (Cost/Booking & ROAS are derived)
+Windsor.ai (GA4 + Google Ads + Meta Ads) ──► cron jobs ─► base data ─┐
+                                              (weekly/daily)          ├─► merged ─► dashboards
+Admin form (bookings, total booking value) ─────────────────────────►┘
+                                              (Conversion Rate, Cost/Booking & ROAS are derived)
 ```
 
 | Metric | Source |
 |---|---|
 | Website Visitors (+ by source) | GA4 via Windsor.ai |
-| Conversion Rate | derived (qualified leads ÷ visitors) |
-| Qualified Leads | HubSpot (overridable by Olive in admin) |
 | Google / Meta Ads Spend | Windsor.ai |
-| Bookings, Total Booking Value, Olive leads | **manual** (admin form) |
+| Bookings, Total Booking Value | **manual** (admin form) |
+| Booking Conversion Rate | **derived** (bookings ÷ visitors) |
 | Cost Per Booking, ROAS | **derived** from the above |
 | All traffic-analytics data | GA4 via Windsor.ai |
 
@@ -58,7 +56,7 @@ admin form persists to `data/store/` locally.
 3. **Set environment variables** (Project → Settings → Environment Variables) — see `.env.example`:
    - `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`
    - `CRON_SECRET` (generate with `openssl rand -hex 32`)
-   - `WINDSOR_API_KEY`, `HUBSPOT_TOKEN`
+   - `WINDSOR_API_KEY`
 4. **Seed the database** with the historical weeks (once): `npm run seed:db` locally with
    `DATABASE_URL` in `.env.local`, or hit the backfill endpoints (below).
 5. Deploy. The cron jobs in `vercel.json` run automatically:
@@ -73,9 +71,7 @@ The connector field mappings use Windsor.ai's GA4 defaults. To wire your account
    Google Ads, and Meta match `WINDSOR_*_CONNECTOR` in `.env.example`. If Windsor renamed any
    fields for your account, adjust the `F` map in [`src/lib/windsor.ts`](src/lib/windsor.ts) once
    (open a connector URL with `&fields=...` to see exact keys).
-2. **HubSpot** — create a Private App with CRM read scope; set `HUBSPOT_TOKEN`. Adjust
-   `QUALIFIED_STAGES` in [`src/lib/hubspot.ts`](src/lib/hubspot.ts) to match your lifecycle stages.
-3. **Test a pull** (replace the secret):
+2. **Test a pull** (replace the secret):
    ```bash
    curl -H "Authorization: Bearer $CRON_SECRET" https://<your-app>.vercel.app/api/cron/traffic
    curl -H "Authorization: Bearer $CRON_SECRET" "https://<your-app>.vercel.app/api/cron/marketing?week=2026-05-11"
@@ -96,7 +92,7 @@ src/
   components/                Nav, WeekPicker, Sparkline, TrafficCharts
   lib/
     store.ts                 Postgres / file+seed adapter
-    windsor.ts, hubspot.ts   Connectors
+    windsor.ts               Windsor.ai connector (GA4 + Google/Meta Ads)
     marketing-pipeline.ts    Weekly assembly
     metrics.ts               Manual overlay + derivations
     types.ts, auth.ts, traffic-utils.ts

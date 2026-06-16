@@ -3,10 +3,9 @@ import type { ManualWeekInput, Metric, WeekData } from "./types";
 /**
  * Overlay manually-entered numbers onto an auto-pulled (or seed) week.
  *
- * Auto pipeline (Windsor.ai + HubSpot) supplies: totalVisitors, conversionRate,
- * googleAdsSpend, metaAdsSpend, qualifiedLeads.
- * The human supplies the rest via /admin: bookings, totalBookingValue, oliveLeads.
- * Cost Per Booking and ROAS are then *derived* so the two never drift.
+ * Auto pipeline (Windsor.ai) supplies: totalVisitors, googleAdsSpend, metaAdsSpend.
+ * The human supplies the rest via /admin: bookings, totalBookingValue.
+ * Booking Conversion Rate, Cost Per Booking, and ROAS are then *derived* so they never drift.
  */
 export function applyManual(base: WeekData, manual?: ManualWeekInput | null): WeekData {
   // Deep-ish clone so we never mutate stored/seed objects.
@@ -32,8 +31,10 @@ export function applyManual(base: WeekData, manual?: ManualWeekInput | null): We
   if (manual.bookings != null && manual.bookings > 0) {
     out.metrics.costPerBooking = setCurrent(out.metrics.costPerBooking, adSpend / manual.bookings);
   }
-  if (manual.oliveLeads != null) {
-    out.metrics.qualifiedLeads = setCurrent(out.metrics.qualifiedLeads, manual.oliveLeads);
+  // Booking conversion rate = bookings ÷ website visitors.
+  const visitors = out.metrics.totalVisitors?.current ?? 0;
+  if (manual.bookings != null && visitors > 0) {
+    out.metrics.conversionRate = setCurrent(out.metrics.conversionRate, manual.bookings / visitors);
   }
 
   // ROAS always derived from (possibly overridden) booking value vs ad spend.
@@ -54,6 +55,5 @@ export function manualFromWeek(week: WeekData): ManualWeekInput {
     weekOf: week.weekOf.start,
     bookings: cpb > 0 ? Math.round(adSpend / cpb) : null,
     totalBookingValue: week.metrics.totalBookingValue?.current ?? null,
-    oliveLeads: week.metrics.qualifiedLeads?.current ?? null,
   };
 }
