@@ -1,43 +1,32 @@
-# Bolt Farm Treehouse — Marketing Analytics Dashboard
+# bolt-marketing-dashboard
 
-A stable, auto-updating replacement for the two hand-maintained Netlify dashboards
-([weekly marketing report](https://boltfarm-marketing-dashboard.netlify.app/) and
-[traffic analytics](https://boltfarm.netlify.app/traffic-analytics/)), rebuilt as one
-Next.js app on Vercel.
+**Owner:** Tim Gerst, Marketing Director
+**Status:** active
 
-- **`/`** — Weekly Marketing Report (visitors, leads, conversion, ad spend, cost/booking, booking value, ROAS)
-- **`/traffic`** — Traffic Analytics (yesterday, 30-day, daily trend, by-channel, comparisons, insights)
-- **`/admin`** — password-protected form for the numbers that can't be pulled automatically
+> Status note: `active` is the answer of record (Keagan, 2026-09-01) — the dashboard is in use by
+> the marketing team. The repo's own evidence reads colder than that: the README is written as
+> *instructions for someone about to deploy it*, and the last **Production** Vercel deployment
+> recorded on GitHub is **2026-06-18** (previews continued to 2026-08-12). The status is
+> authoritative; the deployment gap is just a quiet repo.
 
-Data auto-refreshes on a schedule; manual numbers are entered in the admin form; the two are
-merged at render time.
+## What is this?
 
-## How data flows
+A stable, auto-updating marketing analytics dashboard for Bolt Farm Treehouse, built as one
+Next.js app on Vercel to replace two hand-maintained Netlify dashboards (the
+[weekly marketing report](https://boltfarm-marketing-dashboard.netlify.app/) and
+[traffic analytics](https://boltfarm.netlify.app/traffic-analytics/)). Three surfaces:
 
-```
-Windsor.ai (GA4 + Google Ads + Meta Ads) ──► cron jobs ─► base data ─┐
-                                              (weekly/daily)          ├─► merged ─► dashboards
-Admin form (bookings, total booking value) ─────────────────────────►┘
-                                              (Conversion Rate, Cost/Booking & ROAS are derived)
-```
+- `/` — Weekly Marketing Report: visitors, leads, conversion, ad spend, cost per booking, booking
+  value, ROAS.
+- `/traffic` — Traffic Analytics: yesterday, 30-day, daily trend, by-channel, comparisons,
+  insights.
+- `/admin` — password-protected form for the numbers that cannot be pulled automatically.
 
-| Metric | Source |
-|---|---|
-| Website Visitors (+ by source) | GA4 via Windsor.ai |
-| Google / Meta Ads Spend | Windsor.ai |
-| Bookings, Total Booking Value | **manual** (admin form) |
-| Booking Conversion Rate | **derived** (bookings ÷ visitors) |
-| Cost Per Booking, ROAS | **derived** from the above |
-| All traffic-analytics data | GA4 via Windsor.ai |
+GA4, Google Ads and Meta Ads data arrive from Windsor.ai on cron; bookings and total booking value
+are entered by hand in the admin form; conversion rate, cost per booking and ROAS are derived. The
+two sources are merged at render time. Audience: the Bolt Farm marketing team and leadership.
 
-## Storage
-
-- **Production:** Postgres (Neon, via the Vercel Marketplace). Set `DATABASE_URL`.
-- **No DB set:** the app runs read-only from the committed seed snapshots in
-  `src/data/seed/` (real data from the old dashboards), and the admin form writes to local
-  files under `data/store/` — fine for local dev, not for production.
-
-## Local development
+## Run it locally
 
 ```bash
 npm install
@@ -45,60 +34,54 @@ cp .env.example .env.local   # set ADMIN_PASSWORD at minimum
 npm run dev                  # http://localhost:3000
 ```
 
-With no `DATABASE_URL`, you immediately get the dashboards populated from seed data, and the
-admin form persists to `data/store/` locally.
+Prereqs: Node with npm (no engine pinned in `package.json`; the repo uses `package-lock.json`).
+With no `DATABASE_URL`, the app runs read-only from the committed seed snapshots in
+`src/data/seed/` and the admin form persists to local files under `data/store/` — fine for local
+dev, not for production. Seed a real database once with `npm run seed:db` while `DATABASE_URL` is
+in `.env.local`, or hit the backfill endpoints.
 
-## Deploy to Vercel
+## Where it deploys
 
-1. Push this repo to GitHub and import it at [vercel.com/new](https://vercel.com/new).
-2. **Add a database:** Vercel project → Storage → Marketplace → **Neon** (Postgres). This sets
-   `DATABASE_URL` automatically.
-3. **Set environment variables** (Project → Settings → Environment Variables) — see `.env.example`:
-   - `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`
-   - `CRON_SECRET` (generate with `openssl rand -hex 32`)
-   - `WINDSOR_API_KEY`
-4. **Seed the database** with the historical weeks (once): `npm run seed:db` locally with
-   `DATABASE_URL` in `.env.local`, or hit the backfill endpoints (below).
-5. Deploy. The cron jobs in `vercel.json` run automatically:
-   - `/api/cron/traffic` — daily at 11:00 UTC (~6 AM Central)
-   - `/api/cron/marketing` — Mondays at 12:00 UTC
+- **Production:** Vercel project `bolt-marketing-dashboard` on team `boltfarm`
+  (Vercel team slug also appears as `bolt-farm`). GitHub records Production deployments, the most
+  recent on **2026-06-18**; previews continued through 2026-08-12.
+- **Staging:** none. Vercel preview deployments per push.
+- **Deploy mechanism:** Vercel Git integration — push auto-deploys. First-time setup per the
+  README: import at vercel.com/new → Storage → Marketplace → Neon (sets `DATABASE_URL`
+  automatically) → set env vars → seed.
+- **Crons** (`vercel.json`):
+  | Path | Schedule |
+  |---|---|
+  | `/api/cron/traffic` | daily 11:00 UTC (~06:00 Central) |
+  | `/api/cron/marketing` | Mondays 12:00 UTC |
+- **Logs / dashboards:** Vercel dashboard → project `bolt-marketing-dashboard` → Logs and Cron
+  history; Neon console for the database; windsor.ai for the connectors.
+- **Canonical URL:** the repo does not record a custom domain or stable alias; the current
+  production URL is the one shown for the project in the Vercel dashboard.
 
-## Connecting the live data sources
+## Critical dependencies & secrets
 
-The connector field mappings use Windsor.ai's GA4 defaults. To wire your account:
+**Depends on:**
 
-1. **Windsor.ai** — get your API key (windsor.ai → API). Confirm the connector slugs for GA4,
-   Google Ads, and Meta match `WINDSOR_*_CONNECTOR` in `.env.example`. If Windsor renamed any
-   fields for your account, adjust the `F` map in [`src/lib/windsor.ts`](src/lib/windsor.ts) once
-   (open a connector URL with `&fields=...` to see exact keys).
-2. **Test a pull** (replace the secret):
-   ```bash
-   curl -H "Authorization: Bearer $CRON_SECRET" https://<your-app>.vercel.app/api/cron/traffic
-   curl -H "Authorization: Bearer $CRON_SECRET" "https://<your-app>.vercel.app/api/cron/marketing?week=2026-05-11"
-   ```
-   The `?week=` param backfills a specific week.
+- **Vercel** (team `boltfarm`) — hosting, Git deploys, and the two crons.
+- **Neon Postgres** (Vercel Marketplace) — production persistence. Without `DATABASE_URL` the app
+  degrades to read-only committed seed data.
+- **Windsor.ai** — the single data source for GA4, Google Ads and Meta Ads. Connector slugs are
+  configurable: `WINDSOR_GA4_CONNECTOR` (`googleanalytics4`), `WINDSOR_GOOGLEADS_CONNECTOR`
+  (`google_ads`), `WINDSOR_META_CONNECTOR` (`facebook`). Website Visitors counts only the GA4
+  hostname in `WINDSOR_PRIMARY_HOSTNAME` (`www.boltfarmtreehouse.com`), and Meta campaigns whose
+  name contains any of `WINDSOR_META_EXCLUDE_CAMPAIGNS` (`coaching,thrive`) are excluded from
+  spend.
+- **Chart.js** for rendering. No other third-party services.
 
-## Project layout
+**Secrets stored in:** **Vercel project environment variables** (Project → Settings →
+Environment Variables), mirrored locally in a git-ignored `.env.local`.
+[`.env.example`](./.env.example) is the complete inventory and ships placeholder values only
+(`ADMIN_PASSWORD=change-me`, `ADMIN_SESSION_SECRET=change-me-to-a-long-random-string`). Names:
+`DATABASE_URL`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `CRON_SECRET` (generate with
+`openssl rand -hex 32`; Vercel sends it as `Authorization: Bearer <CRON_SECRET>`), and
+`WINDSOR_API_KEY`.
 
-```
-src/
-  app/
-    page.tsx                 Weekly Marketing Report
-    traffic/page.tsx         Traffic Analytics
-    admin/                   Auth + manual-data form (server actions)
-    api/
-      marketing|traffic/     JSON read endpoints
-      cron/marketing|traffic/  Scheduled pulls (CRON_SECRET-protected)
-  components/                Nav, WeekPicker, Sparkline, TrafficCharts
-  lib/
-    store.ts                 Postgres / file+seed adapter
-    windsor.ts               Windsor.ai connector (GA4 + Google/Meta Ads)
-    marketing-pipeline.ts    Weekly assembly
-    metrics.ts               Manual overlay + derivations
-    types.ts, auth.ts, traffic-utils.ts
-  data/seed/                 Real historical snapshots (seed)
-scripts/seed-db.mjs          Load seed → Postgres
-vercel.json                  Cron schedules
-```
-
-Styling follows the Bolt Farm Treehouse brand standards (Ovo serif, forest-green palette).
+Held by **Tim Gerst, Marketing Director** (answer of record, 2026-09-01): the **Windsor.ai
+account and its API key** (`WINDSOR_API_KEY`) and the `/admin` **`ADMIN_PASSWORD`**. These are
+Tim's, not Keagan's — ask Tim to read, change or rotate either.
