@@ -1,6 +1,7 @@
 # bolt-marketing-dashboard
 
 **Owner:** Tim Gerst, Marketing Director
+**Backup owner:** Keagan Luttrell, Tech Director
 **Status:** active
 
 > Status note: `active` is the answer of record (Keagan, 2026-09-01) — the dashboard is in use by
